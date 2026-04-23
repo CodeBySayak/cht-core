@@ -15,35 +15,10 @@
           </div>
         </a>
         <ul id="header-dropdown" *dropdownMenu class="dropdown-menu mm-dropdown-menu" role="menu" aria-labelledby="header-dropdown-link">
-          <li role="presentation" mmAuth="can_view_messages,!can_view_messages_tab">
-            <a role="menuitem" tabindex="-1" routerLink="messages">
-              <i class="fa fa-fw fa-envelope"></i>
-              <span>{{'Messages' | translate}}</span>
-            </a>
-          </li>
-          <li role="presentation" mmAuth="can_view_tasks,!can_view_tasks_tab">
-            <a role="menuitem" tabindex="-1" routerLink="tasks">
-              <i class="fa fa-fw fa-flag"></i>
-              <span>{{'Tasks' | translate}}</span>
-            </a>
-          </li>
-          <li role="presentation" mmAuth="can_view_reports,!can_view_reports_tab">
-            <a role="menuitem" tabindex="-1" routerLink="reports">
-              <i class="fa fa-fw fa-list-alt"></i>
-              <span>{{'Reports' | translate}}</span>
-            </a>
-          </li>
-          <li role="presentation" mmAuth="can_view_contacts,!can_view_contacts_tab">
-            <a role="menuitem" tabindex="-1" routerLink="contacts">
-              <i class="fa fa-fw fa-user"></i>
-              <span>{{'Contacts' | translate}}</span>
-            </a>
-          </li>
-
-          <li role="presentation" mmAuth="can_view_analytics,!can_view_analytics_tab">
-            <a role="menuitem" tabindex="-1" routerLink="analytics" routerLink-opts="{reload: true}">
-              <i class="fa fa-bar-chart-o"></i>
-              <span>{{'Analytics' | translate}}</span>
+          <li role="presentation" *ngFor="let tab of allTabs" [mmAuth]="getLegacyMenuPermissions(tab)">
+            <a role="menuitem" tabindex="-1" [routerLink]="tab.route" [routerLink-opts]="tab.name === 'analytics' ? { reload: true } : {}">
+              <i class="fa fa-fw" [ngClass]="tab.icon || tab.defaultIcon"></i>
+              <span>{{tab.translation | translate}}</span>
             </a>
           </li>
           <li role="presentation" class="desktop-only" mmAuth [mmAuthAny]="[ 'can_configure', 'can_view_outgoing_messages', 'can_export_all' ]" [mmAuthOnline]="true">

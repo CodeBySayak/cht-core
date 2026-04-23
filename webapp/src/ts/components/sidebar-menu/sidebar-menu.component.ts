@@ -19,6 +19,8 @@ import { StorageInfoService } from '@mm-services/storage-info.service';
 
 import { filter } from 'rxjs/operators';
 import { Selectors } from '@mm-selectors/index';
+import { SettingsService } from '@mm-services/settings.service';
+import { HeaderTab, HeaderTabsService } from '@mm-services/header-tabs.service';
 
 @Component({
   selector: 'mm-sidebar-menu',
@@ -54,6 +56,8 @@ export class SidebarMenuComponent extends BaseMenuComponent implements OnInit, O
     protected modalService: ModalService,
     private router: Router,
     protected readonly storageInfoService: StorageInfoService,
+    private settingsService: SettingsService,
+    private headerTabsService: HeaderTabsService,
   ) {
     super(store, dbSyncService, modalService, storageInfoService);
     this.globalActions = new GlobalActions(store);
@@ -103,38 +107,25 @@ export class SidebarMenuComponent extends BaseMenuComponent implements OnInit, O
   }
 
   private setModuleOptions() {
-    this.moduleOptions = [
-      {
-        routerLink: 'messages',
-        icon: 'fa-envelope',
-        translationKey: 'Messages',
-        hasPermissions: 'can_view_messages,!can_view_messages_tab'
-      },
-      {
-        routerLink: 'tasks',
-        icon: 'fa-flag',
-        translationKey: 'Tasks',
-        hasPermissions: 'can_view_tasks,!can_view_tasks_tab'
-      },
-      {
-        routerLink: 'reports',
-        icon: 'fa-list-alt',
-        translationKey: 'Reports',
-        hasPermissions: 'can_view_reports,!can_view_reports_tab'
-      },
-      {
-        routerLink: 'contacts',
-        icon: 'fa-user',
-        translationKey: 'Contacts',
-        hasPermissions: 'can_view_contacts,!can_view_contacts_tab'
-      },
-      {
-        routerLink: 'analytics',
-        icon: 'fa-bar-chart-o',
-        translationKey: 'Analytics',
-        hasPermissions: 'can_view_analytics,!can_view_analytics_tab',
-      },
-    ];
+    this.settingsService.get().then(settings => {
+      const tabs = this.headerTabsService.get(settings);
+      this.moduleOptions = tabs.map(tab => ({
+        routerLink: tab.route,
+        icon: tab.icon || tab.defaultIcon,
+        translationKey: tab.translation,
+        hasPermissions: this.getSidebarPermissions(tab),
+      }));
+    });
+  }
+
+  private getSidebarPermissions(tab: HeaderTab) {
+    if (Array.isArray(tab.permissions)) {
+      if (tab.permissions.length === 2) {
+        return `${tab.permissions[0]},!${tab.permissions[1]}`;
+      }
+      return tab.permissions.join(',');
+    }
+    return tab.permissions;
   }
 
   private setSecondaryOptions(showPrivacyPolicy = false) {

@@ -1,6 +1,14 @@
 import { Injectable } from '@angular/core';
-
 import { AuthService } from '@mm-services/auth.service';
+
+const DEFAULT_WEIGHTS: {[key: string]: number} = {
+  messages: 1,
+  tasks: 2,
+  reports: 3,
+  contacts: 4,
+  analytics: 5,
+};
+const CUSTOM_WEIGHT = 6;
 
 @Injectable({
   providedIn: 'root'
@@ -20,6 +28,7 @@ export class HeaderTabsService {
       typeName: 'message',
       icon: undefined,
       resourceIcon: undefined,
+      weight: DEFAULT_WEIGHTS.messages,
     },
     {
       name: 'tasks',
@@ -30,6 +39,7 @@ export class HeaderTabsService {
       typeName: 'task',
       icon: undefined,
       resourceIcon: undefined,
+      weight: DEFAULT_WEIGHTS.tasks,
     },
     {
       name: 'reports',
@@ -40,6 +50,7 @@ export class HeaderTabsService {
       typeName: 'report',
       icon: undefined,
       resourceIcon: undefined,
+      weight: DEFAULT_WEIGHTS.reports,
     },
     {
       name: 'contacts',
@@ -49,6 +60,7 @@ export class HeaderTabsService {
       permissions: ['can_view_contacts', 'can_view_contacts_tab'],
       icon: undefined,
       resourceIcon: undefined,
+      weight: DEFAULT_WEIGHTS.contacts,
     },
     {
       name: 'analytics',
@@ -58,6 +70,7 @@ export class HeaderTabsService {
       permissions: ['can_view_analytics', 'can_view_analytics_tab'],
       icon: undefined,
       resourceIcon: undefined,
+      weight: DEFAULT_WEIGHTS.analytics,
     }
   ];
 
@@ -70,25 +83,50 @@ export class HeaderTabsService {
    * @returns HeaderTab[]
    */
   get(settings?): HeaderTab[] {
-    if (!settings?.header_tabs) {
-      return this.tabs;
+    const tabs = this.tabs.map(tab => ({ ...tab }));
+
+    if (settings?.header_tabs) {
+      Object.keys(settings.header_tabs).forEach(tabName => {
+        let tab = tabs.find(t => t.name === tabName);
+        const settingsTab = settings.header_tabs[tabName];
+
+        if (!tab) {
+          const name = tabName || settingsTab.id;
+          tab = {
+            name,
+            route: settingsTab.route || name,
+            defaultIcon: settingsTab.default_icon || settingsTab.defaultIcon || 'fa-external-link',
+            translation: settingsTab.translation || settingsTab.label || name,
+            permissions: settingsTab.permissions || [],
+            weight: settingsTab.weight || CUSTOM_WEIGHT,
+          };
+          tabs.push(tab);
+        }
+
+        if (settingsTab.icon && settingsTab.icon.startsWith('fa-')) {
+          tab.icon = settingsTab.icon;
+        }
+
+        if (settingsTab.resource_icon) {
+          tab.resourceIcon = settingsTab.resource_icon;
+        }
+
+        if (settingsTab.weight !== undefined) {
+          tab.weight = settingsTab.weight;
+        }
+      });
     }
 
-    this.tabs.forEach(tab => {
-      if (!settings.header_tabs[tab.name]) {
-        return;
+    return tabs.sort((a, b) => {
+      const weightA = a.weight ?? CUSTOM_WEIGHT;
+      const weightB = b.weight ?? CUSTOM_WEIGHT;
+
+      if (weightA !== weightB) {
+        return weightA - weightB;
       }
 
-      if (settings.header_tabs[tab.name].icon && settings.header_tabs[tab.name].icon.startsWith('fa-')) {
-        tab.icon = settings.header_tabs[tab.name].icon;
-      }
-
-      if (settings.header_tabs[tab.name].resource_icon) {
-        tab.resourceIcon = settings.header_tabs[tab.name].resource_icon;
-      }
+      return a.translation.localeCompare(b.translation);
     });
-
-    return this.tabs;
   }
 
   /**
@@ -126,8 +164,9 @@ export interface HeaderTab {
   route: string;
   defaultIcon: string;
   translation: string;
-  permissions: string[];
+  permissions: string | string[];
   typeName?: string;
   icon?: string;
   resourceIcon?: string;
+  weight?: number;
 }

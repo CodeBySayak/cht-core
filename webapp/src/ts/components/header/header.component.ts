@@ -51,6 +51,7 @@ export class HeaderComponent extends BaseMenuComponent implements OnInit, OnDest
   // replicationStatus;
   currentTab;
   bubbleCount = {};
+  allTabs: HeaderTab[] = [];
   permittedTabs: HeaderTab[] = [];
 
   constructor(
@@ -74,6 +75,16 @@ export class HeaderComponent extends BaseMenuComponent implements OnInit, OnDest
     super.ngOnDestroy();
   }
 
+  getLegacyMenuPermissions(tab: HeaderTab) {
+    if (Array.isArray(tab.permissions)) {
+      if (tab.permissions.length === 2) {
+        return `${tab.permissions[0]},!${tab.permissions[1]}`;
+      }
+      return tab.permissions.join(',');
+    }
+    return tab.permissions;
+  }
+
   private additionalSubscriptions(){
     const currentTab = this.store
       .select(Selectors.getCurrentTab)
@@ -95,7 +106,10 @@ export class HeaderComponent extends BaseMenuComponent implements OnInit, OnDest
   private getHeaderTabs() {
     this.settingsService
       .get()
-      .then(settings => this.headerTabsService.getAuthorizedTabs(settings))
+      .then(settings => {
+        this.allTabs = this.headerTabsService.get(settings);
+        return this.headerTabsService.getAuthorizedTabs(settings);
+      })
       .then(permittedTabs => {
         this.permittedTabs = permittedTabs;
       });
